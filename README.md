@@ -2,25 +2,26 @@
 
 A unified inbox and private email archive for multiple providers, deployed on Vercel.
 
-## Implemented foundation
-- Next.js App Router + TypeScript
-- Supabase magic-link authentication
-- Gmail OAuth with read-only Gmail scope
-- AES-256-GCM encryption for stored OAuth tokens
-- Gmail initial import (up to 100 recent messages/account) with duplicate protection
-- Supabase PostgreSQL schema and per-user RLS
-- Unified inbox dashboard
+## Implemented
+- Next.js App Router + TypeScript dashboard
+- Supabase magic-link authentication and user-scoped RLS
+- Gmail OAuth with read-only scope
+- AES-256-GCM encrypted OAuth refresh-token storage
+- Gmail initial importer (up to 100 recent messages/account), full text/html MIME body extraction and attachment metadata
+- Duplicate protection by account + provider message ID
+- Protected Vercel Cron endpoint for scheduled Gmail archive sync (daily schedule)
 
-## Setup and deployment
-1. Supabase project `uopljljlsuxbogbhadhj` has the `mail_accounts` and `email_messages` schema and user-scoped RLS policies.
-2. Enable Supabase email OTP/magic links. Set Site URL and redirect URL to `https://YOUR_VERCEL_DOMAIN/auth/callback`.
-3. In Google Cloud, enable Gmail API and create OAuth web credentials. Add `https://YOUR_VERCEL_DOMAIN/api/oauth/google/callback` as an authorized redirect URI.
-4. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, and `TOKEN_ENCRYPTION_KEY` to Vercel. Generate the encryption key with `openssl rand -base64 32`.
-5. Sign in, connect Gmail, and click Sync. Gmail permission is read-only.
+## Required configuration
+1. Supabase project `uopljljlsuxbogbhadhj` has `mail_accounts` and `email_messages` tables with owner-based RLS policies.
+2. In Supabase Auth URL Configuration, set Site URL to `https://max-email-kuros-projects-5211db6f.vercel.app` and add redirect `https://max-email-kuros-projects-5211db6f.vercel.app/auth/callback`.
+3. In Google Cloud, enable Gmail API and create OAuth Web credentials. Add `https://max-email-kuros-projects-5211db6f.vercel.app/api/oauth/google/callback` as an authorized redirect URI.
+4. Vercel already has Supabase URL, anon key, token encryption key, APP_URL, GOOGLE_REDIRECT_URI and CRON_SECRET. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` (encrypted) to project environment variables.
+5. Supabase Auth magic-link email provider must be enabled. Sign in, connect Gmail, and click Sync to test.
 
-## Provider status
-- Gmail: initial read-only connection and import implemented.
-- Outlook/Microsoft 365: Graph OAuth adapter is not yet implemented.
+## Provider support status
+- Gmail: OAuth connection and read-only message import implemented; daily cron endpoint implemented.
+- Outlook/Microsoft 365: Microsoft Graph OAuth adapter not yet implemented.
 - Proton Mail: requires Proton Mail Bridge on a persistent host and a separate IMAP sync worker; Bridge cannot run inside a Vercel serverless function.
 - Generic IMAP: persistent worker adapter planned.
-- Continuous background sync, incremental Gmail History API, full MIME parsing and attachment archival remain follow-up milestones. Vercel Functions are not an always-on worker.
+- Attachment metadata is archived, but attachment binary files are not yet downloaded to Storage.
+- Vercel Hobby cron is daily; more frequent schedules require a plan that supports them or an external worker/scheduler.
